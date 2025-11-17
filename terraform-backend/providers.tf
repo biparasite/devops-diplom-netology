@@ -12,7 +12,7 @@ terraform {
   backend "s3" {
     endpoints = {
       s3       = "https://storage.yandexcloud.net"
-      #dynamodb = хранится в backend-config.tfvars terraform init -reconfigure -backend-config=backend-config.tfvars
+      #dynamodb = хранится в backend-config.tfvars 
       dynamodb = var.dynamodb
     }
     bucket            = "iam-bucket-asv-sula"

@@ -89,7 +89,7 @@
 
 Чуствительные переменные хранятся в backend-config.tfvars. Использовались kubeadm, CNI cilium, для запуска контейнеров CRI-O, с containerd что-то не срослось в YC..
 
-![kubeconf](https://github.com/biparasite/devops-diplom-netology/blob/main/pic/kubeconf "kubeconf")
+![kubeconf](https://github.com/biparasite/devops-diplom-netology/blob/main/pic/kubeconf.png "kubeconf")
 ![kubectl_get](https://github.com/biparasite/devops-diplom-netology/blob/main/pic/kubectl_get.png "kubectl_get")
 
 ---

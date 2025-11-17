@@ -1,0 +1,54 @@
+- name: Configure kernel modules and sysctl for Kubernetes
+  hosts: all
+  become: true # требуется sudo
+  tasks:
+    - name: Ensure required kernel modules are loaded
+      ansible.builtin.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Create /etc/modules-load.d/k8s.conf
+      ansible.builtin.copy:
+        content: |
+          overlay
+          br_netfilter
+        dest: /etc/modules-load.d/k8s.conf
+        mode: "0644"
+      notify: reload modules
+
+    - name: Create /etc/sysctl.d/k8s.conf
+      ansible.builtin.copy:
+        content: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.ipv4.ip_forward = 1
+        dest: /etc/sysctl.d/k8s.conf
+        mode: "0644"
+      notify: apply sysctl
+
+    - name: Remove swapfile from /etc/fstab
+      mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+      with_items:
+        - swap
+        - none
+
+    - name: Disable swap
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0
+
+  handlers:
+    - name: reload modules
+      ansible.builtin.command:
+        cmd: /sbin/modprobe -a overlay br_netfilter
+      listen: reload modules
+
+    - name: apply sysctl
+      ansible.builtin.command:
+        cmd: /sbin/sysctl --system
+      listen: apply sysctl

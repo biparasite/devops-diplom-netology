@@ -1,0 +1,219 @@
+- name: Install CRI-O on Debian 12
+  hosts: all
+  vars:
+    ansible_ssh_host_key_checking: False
+  become: true
+  tasks:
+    - name: Install apps
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gpg
+          - pip
+          - git
+        update_cache: true
+      become: true
+
+    - name: Download and install CRI‑O GPG key
+      ansible.builtin.apt_key:
+        url: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.33/deb/Release.key
+        keyring: /etc/apt/trusted.gpg.d/cri-o-apt-keyring.gpg
+      register: gpg_key_result
+
+    - name: Add CRI‑O APT repository
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/etc/apt/trusted.gpg.d/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.33/deb/ /
+        state: present
+        filename: cri-o
+      register: repo_result
+      changed_when: repo_result is changed
+
+    - name: Update APT cache after adding repository
+      ansible.builtin.apt:
+        update_cache: true
+      when: repo_result is changed
+
+    - name: Install CRI-O
+      ansible.builtin.apt:
+        name:
+          - cri-o
+        state: present
+      become: true
+
+    - name: Enable and start CRI-O service
+      ansible.builtin.systemd:
+        name: crio
+        state: started
+        enabled: true
+
+- name: Install K8S and helm
+  hosts: all
+  become: true
+  vars:
+  tasks:
+    - name: Download Helm installation script
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: "0755"
+
+    - name: Run Helm installation script
+      ansible.builtin.command: /tmp/get_helm.sh
+      args:
+        creates: /usr/local/bin/helm # Prevents re-running if Helm is already installed
+      register: helm_install_result
+      changed_when: false # Mark as not changed, as the script itself performs the change
+
+    - name: Add /usr/local/bin to PATH (if not already present)
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        line: "export PATH=$PATH:/usr/local/bin"
+        create: yes
+        state: present
+      when: helm_install_result.rc == 0 # Only add to PATH if installation was successful
+
+    - name: Mkdir keyrings # Добаление директории
+      ansible.builtin.file:
+        path: "/etc/apt/keyrings"
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Add gpg key # добавляем ключ
+      apt_key:
+        url: "https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key"
+        state: present
+        keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      become: true
+
+    - name: Add repo # Добавляем репозиторий
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /"
+      become: true
+
+    - name: Install Kubernetes packages. # Установка K8s
+      package:
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
+        state: present
+      become: true
+
+    - name: Hold kubeadm # отключим обновления
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubeadm
+        - kubelet
+        - kubectl
+      become: true
+
+- name: Initialize Kubernetes control plane
+  hosts: Control_node
+  gather_facts: yes
+  become: false
+  tasks:
+    - name: Initialize the Kubernetes cluster using kubeadm # инициализируем кластер
+      shell: "kubeadm init --pod-network-cidr 10.244.0.0/16 --apiserver-cert-extra-sans={{ ansible_host}} --skip-phases=addon/kube-proxy"
+      args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+      become: true
+
+    - name: Mkdir HOME/.kube/
+      ansible.builtin.file:
+        path: "/home/biparasite/.kube/"
+        state: directory
+        mode: "0755"
+      become: false
+
+    - name: Get permission # даем доступ для обычного пользователя
+      shell: "cp -f /etc/kubernetes/admin.conf /home/biparasite/.kube/config"
+      become: true
+
+    - name: Get permission # даем доступ для обычного пользователя
+      become: true
+      ansible.builtin.file:
+        path: /home/biparasite/.kube/config
+        mode: "0644"
+        owner: biparasite
+        group: biparasite
+        state: file
+
+    - name: Generate join commandq
+      command: kubeadm token create --print-join-command
+      register: join_command
+
+    - name: Copy join command to local file
+      local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="/Users/biparasite/Documents/Netology/Git/devops-diplom-netology/terraform-backend/ansible/join-command"
+
+- name: Init nodes
+  hosts: Worker_node
+  become: false
+  tasks:
+    - name: Copy the join command to server location
+      copy: src=join-command dest=/tmp/join-command.sh mode=0777
+
+    - name: Join the node to cluster # запускаем наш файл
+      command: sh /tmp/join-command.sh
+      become: true
+
+- name: Install Cilium CNI
+  hosts: Control_node # укажите хост/группу
+  become: false # обязательно для sudo
+  tasks:
+    - name: Add Cilium Helm repository
+      ansible.builtin.command:
+        cmd: helm repo add cilium https://helm.cilium.io
+      changed_when: false # если репозиторий уже есть
+    - name: Update Helm repositories
+      ansible.builtin.command:
+        cmd: helm repo update
+      changed_when: false
+    - name: Install Cilium via Helm
+      kubernetes.core.helm:
+        name: cilium
+        chart_ref: cilium/cilium
+        namespace: kube-system
+        values:
+          kubeProxyReplacement: true
+          k8sServiceHost: "{{ ansible_default_ipv4.address }}"
+          k8sServicePort: 6443
+          cni:
+            enabled: true
+          operator:
+            enabled: true
+      register: cilium_install_result
+    - name: Debug Helm output
+      ansible.builtin.debug:
+        var: cilium_install_result
+      when: cilium_install_result is failed
+
+    - name: Pause until user confirmation
+      ansible.builtin.pause:
+        prompt: "Verify application updates and press 'C' to continue or 'A' to abort."
+
+- name: Install prometheus-community
+  hosts: Control_node
+  become: false
+  tasks:
+    - name: Add stable chart repo prometheus-community
+      kubernetes.core.helm_repository:
+        name: prometheus-community
+        repo_url: "https://prometheus-community.github.io/helm-charts"
+
+    - name: Update Helm repositories
+      ansible.builtin.command:
+        cmd: helm repo update
+
+    - name: Deploy latest version of prometheus-community
+      kubernetes.core.helm:
+        name: my-prometheus-stack
+        chart_ref: prometheus-community/kube-prometheus-stack
+        release_namespace: monitoring
+        create_namespace: true
+        update_repo_cache: true

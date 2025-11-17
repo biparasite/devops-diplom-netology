@@ -1,0 +1,1 @@
+kubeadm join 10.10.3.32:6443 --token wjkzgw.ogocx35bhpp2k8dt --discovery-token-ca-cert-hash sha256:9e5f5136b0d7f33b64557e978efb13883193ef149b6f6e5da53e2238fb0f80c1 

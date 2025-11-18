@@ -503,7 +503,14 @@ Finished: SUCCESS
 
 </details>
 
+
+![jenkins](https://github.com/biparasite/devops-diplom-netology/blob/main/pic/jenkins.png "jenkins")
+
+
+### ArgoCD
+
 ![argocd-1](https://github.com/biparasite/devops-diplom-netology/blob/main/pic/argocd-1.png "argocd-1")
+
 ![argocd](https://github.com/biparasite/devops-diplom-netology/blob/main/pic/argocd.png "argocd")
 
 ---

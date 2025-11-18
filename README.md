@@ -196,11 +196,11 @@ pipeline {
     agent any
     triggers {
 
-        pollSCM('* * * * *')
+        pollSCM('* * * * *')  
     }
     environment {
         IMAGE_USER = 'biparasite/'
-        IMAGE_NAME = 'nginx_static'
+        IMAGE_NAME = 'nginx_static'  
         TAG = "${env.GIT_COMMIT[0..7]}"
     }
     stages {
@@ -227,26 +227,26 @@ pipeline {
             steps {
                 script {
                     // --- КОНФИГУРАЦИЯ ---
-                    def CONFIG_REPO_URL = 'https://github.com/biparasite/netology-diplom-k8s-config.git'
-                    def GIT_CREDENTIALS_ID = 'github-ssh-key-for-push'
+                    def CONFIG_REPO_URL = 'https://github.com/biparasite/netology-diplom-k8s-config.git' 
+                    def GIT_CREDENTIALS_ID = 'github-ssh-key-for-push' 
                     def YAML_PATH = 'nginx/values.yaml'
                     def NEW_IMAGE = "${env.TAG}"
-                    def PROJECT_PATH = "${WORKSPACE}/netology-diplom-k8s-config."
+                    def PROJECT_PATH = "${WORKSPACE}/netology-diplom-k8s-config"
 
                     withCredentials([sshUserPrivateKey(credentialsId: 'github-ssh-key-for-push', keyFileVariable: 'GIT_SSH_KEY_FILE', usernameVariable: 'GIT_USER')]) {
                         sh 'rm -rf netology-diplom-k8s-config'
                         sh "git clone ${CONFIG_REPO_URL}"
-
+                        
                         dir('netology-diplom-k8s-config') {
                             sh "git config user.email 'jenkins@ci.local'"
                             sh "git config user.name 'Jenkins GitOps Updater'"
                             sh "git checkout main" // или любая ветка, за которой следит Argo CD
-
-                            sh "sed -i '' 's/${env.IMAGE_NAME}:.*/${env.IMAGE_NAME}:${NEW_IMAGE}/g' ${PROJECT_PATH}/${YAML_PATH }"
+                            
+                            sh "sed -i '' 's/${env.IMAGE_NAME}:.*/${env.IMAGE_NAME}:${NEW_IMAGE}/g' ${PROJECT_PATH}/${YAML_PATH }"                          
                             sh 'git add .'
                             sh "git commit -m 'GitOps: Auto-deploy ${NEW_IMAGE} triggered by Jenkins CI'"
-
-                            sh "git push https://${GIT_USER}:${GIT_PASS}@github.com/biparasite/netology-diplom-k8s-config.git HEAD:main"
+                            
+                            sh "git push https://github.com/biparasite/netology-diplom-k8s-config.git HEAD:main"
                         }
                     }
                     echo "✅ GitOps Config обновлен до образа: ${NEW_IMAGE}"
@@ -263,6 +263,241 @@ pipeline {
         }
     }
 }
+
+
+```
+
+</details>
+
+<details> <summary>jenkins pipeline log</summary>
+
+```bash
+Started by user unknown or anonymous
+Replayed #25
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /Users/biparasite/.jenkins/workspace/neology-diplom
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /Users/biparasite/.jenkins/workspace/neology-diplom/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/biparasite/netology-diplom-nginx-docker.git # timeout=10
+Fetching upstream changes from https://github.com/biparasite/netology-diplom-nginx-docker.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.50.1 (Apple Git-155)'
+ > git fetch --tags --force --progress -- https://github.com/biparasite/netology-diplom-nginx-docker.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse origin/main^{commit} # timeout=10
+Checking out Revision 3e61befae6e8d6f92a5e95ef028b2ebd465df9d3 (origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 3e61befae6e8d6f92a5e95ef028b2ebd465df9d3 # timeout=10
+Commit message: "Update Jenkinsfile"
+ > git rev-list --no-walk 3e61befae6e8d6f92a5e95ef028b2ebd465df9d3 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] git
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /Users/biparasite/.jenkins/workspace/neology-diplom/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/biparasite/netology-diplom-nginx-docker.git # timeout=10
+Fetching upstream changes from https://github.com/biparasite/netology-diplom-nginx-docker.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.50.1 (Apple Git-155)'
+ > git fetch --tags --force --progress -- https://github.com/biparasite/netology-diplom-nginx-docker.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+Checking out Revision 3e61befae6e8d6f92a5e95ef028b2ebd465df9d3 (refs/remotes/origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 3e61befae6e8d6f92a5e95ef028b2ebd465df9d3 # timeout=10
+ > git branch -a -v --no-abbrev # timeout=10
+ > git branch -D main # timeout=10
+ > git checkout -b main 3e61befae6e8d6f92a5e95ef028b2ebd465df9d3 # timeout=10
+Commit message: "Update Jenkinsfile"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build and Push Docker Image)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withDockerRegistry
+Using the existing docker config file.
+Removing blacklisted property: auths
+$ docker login -u biparasite -p ******** https://registry.hub.docker.com
+WARNING! Using --password via the CLI is insecure. Use --password-stdin.
+
+WARNING! Your credentials are stored unencrypted in '/Users/biparasite/.jenkins/workspace/neology-diplom@tmp/fa764d64-e69f-45f0-820e-c081b32e3e6d/config.json'.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/go/credential-store/
+
+Login Succeeded
+[Pipeline] {
+[Pipeline] isUnix
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] sh
++ docker build -t biparasite/nginx_static:3e61befa .
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 782B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/nginx:alpine
+#2 DONE 0.6s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/4] FROM docker.io/library/nginx:alpine@sha256:b3c656d55d7ad751196f21b7fd2e8d4da9cb430e32f646adcf92441b72f82b14
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 2.55kB done
+#5 DONE 0.0s
+
+#6 [2/4] RUN rm /etc/nginx/conf.d/default.conf
+#6 CACHED
+
+#7 [3/4] COPY default.conf /etc/nginx/conf.d/
+#7 CACHED
+
+#8 [4/4] COPY static/ /usr/share/nginx/html/
+#8 CACHED
+
+#9 exporting to image
+#9 exporting layers done
+#9 writing image sha256:5d852330206321fad64365002c196d2a0cbc31c514fa6bfe3b0a704bc9ad58d6 done
+#9 naming to docker.io/biparasite/nginx_static:3e61befa done
+#9 DONE 0.0s
+
+View build details: docker-desktop://dashboard/build/default/default/asrrmr6ejybjmcpsi801ez453
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] isUnix
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] sh
++ docker tag biparasite/nginx_static:3e61befa registry.hub.docker.com/biparasite/nginx_static:3e61befa
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] isUnix
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] sh
++ docker push registry.hub.docker.com/biparasite/nginx_static:3e61befa
+The push refers to repository [registry.hub.docker.com/biparasite/nginx_static]
+854ca792c2f2: Preparing
+841818dccb93: Preparing
+87542d6ebce3: Preparing
+4c37c07961d9: Preparing
+a199459134dc: Preparing
+b0fad68f6a9c: Preparing
+930a90aa29ed: Preparing
+08ea284afe80: Preparing
+e664822438ac: Preparing
+9aa3e1fc9021: Preparing
+0e64f2360a44: Preparing
+08ea284afe80: Waiting
+930a90aa29ed: Waiting
+b0fad68f6a9c: Waiting
+e664822438ac: Waiting
+0e64f2360a44: Waiting
+9aa3e1fc9021: Waiting
+4c37c07961d9: Layer already exists
+87542d6ebce3: Layer already exists
+854ca792c2f2: Layer already exists
+a199459134dc: Layer already exists
+841818dccb93: Layer already exists
+b0fad68f6a9c: Layer already exists
+e664822438ac: Layer already exists
+930a90aa29ed: Layer already exists
+08ea284afe80: Layer already exists
+9aa3e1fc9021: Layer already exists
+0e64f2360a44: Layer already exists
+3e61befa: digest: sha256:76503eb567c155f633741b98acb62d81e14be019a8a45b2e0766fd77bfe8fc64 size: 2611
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withDockerRegistry
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Update GitOps Config)
+[Pipeline] script
+[Pipeline] {
+[Pipeline] withCredentials
+Masking supported pattern matches of $GIT_SSH_KEY_FILE
+[Pipeline] {
+[Pipeline] sh
++ rm -rf netology-diplom-k8s-config
+[Pipeline] sh
++ git clone https://github.com/biparasite/netology-diplom-k8s-config.git
+Cloning into 'netology-diplom-k8s-config'...
+[Pipeline] dir
+Running in /Users/biparasite/.jenkins/workspace/neology-diplom/netology-diplom-k8s-config
+[Pipeline] {
+[Pipeline] sh
++ git config user.email jenkins@ci.local
+[Pipeline] sh
++ git config user.name 'Jenkins GitOps Updater'
+[Pipeline] sh
++ git checkout main
+Already on 'main'
+Your branch is up to date with 'origin/main'.
+[Pipeline] sh
++ sed -i '' 's/nginx_static:.*/nginx_static:3e61befa/g' /Users/biparasite/.jenkins/workspace/neology-diplom/netology-diplom-k8s-config/nginx/values.yaml
+[Pipeline] sh
++ git add .
+[Pipeline] sh
++ git commit -m 'GitOps: Auto-deploy 3e61befa triggered by Jenkins CI'
+[main 7f7b4b5] GitOps: Auto-deploy 3e61befa triggered by Jenkins CI
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+[Pipeline] sh
++ git push https://github.com/biparasite/netology-diplom-k8s-config.git HEAD:main
+To https://github.com/biparasite/netology-diplom-k8s-config.git
+   25137c0..7f7b4b5  HEAD -> main
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] echo
+✅ GitOps Config обновлен до образа: 3e61befa
+[Pipeline] }
+[Pipeline] // script
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+Пайплайн успешно завершён!
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
 
 ```
 

@@ -16,7 +16,7 @@ resource "yandex_lb_network_load_balancer" "lb-1" {
     healthcheck {
       name = "http"
       http_options {
-        port = 32080
+        port = 80
         path = "/"
       }
     }

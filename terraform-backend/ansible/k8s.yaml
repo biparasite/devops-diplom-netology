@@ -217,3 +217,41 @@
         release_namespace: monitoring
         create_namespace: true
         update_repo_cache: true
+        
+- name: Install argocd
+  hosts: Control_node
+  become: false
+  tasks:
+    - name: Add stable chart repo prometheus-community
+      kubernetes.core.helm_repository:
+        name: argo
+        repo_url: "https://argoproj.github.io/argo-helm"
+    - name: Update Helm repositories
+      ansible.builtin.command:
+        cmd: helm repo update
+    - name: Deploy latest version of argocd
+      kubernetes.core.helm:
+        name: argocd
+        chart_ref: argo/argo-cd
+        release_namespace: argocd
+        create_namespace: true
+        update_repo_cache: true
+
+- name: Install Jenkins
+  hosts: Control_node
+  become: false
+  tasks:
+    - name: Add stable chart repo prometheus-community
+      kubernetes.core.helm_repository:
+        name: jenkins
+        repo_url: "https://charts.jenkins.io"
+    - name: Update Helm repositories
+      ansible.builtin.command:
+        cmd: helm repo update
+    - name: Deploy latest version of jenkins
+      kubernetes.core.helm:
+        name: jenkins
+        chart_ref: jenkins/jenkins
+        release_namespace: jenkins
+        create_namespace: true
+        update_repo_cache: true

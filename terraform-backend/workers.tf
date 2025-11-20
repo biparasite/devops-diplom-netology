@@ -53,4 +53,8 @@ resource "yandex_compute_instance_group" "worknode_group" {
     max_unavailable = 1
     max_expansion   = 0
   }
+  load_balancer {
+    target_group_name        = "target-group"
+    target_group_description = "Network Load Balancer target group"
+  }
 }

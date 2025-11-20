@@ -1,6 +1,5 @@
 resource "yandex_vpc_security_group" "k8s-acl" {
   name        = "k8s-acl"
-  description = "Правила группы разрешают доступ к API Kubernetes из интернета. Примените правила только к кластеру."
   network_id  = yandex_vpc_network.develop.id
       ingress {
     protocol          = "ANY"

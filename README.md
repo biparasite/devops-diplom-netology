@@ -187,7 +187,7 @@
 
 ### Ответ
 
-Я немного изменил подход, pipeline смотрит в git https://github.com/biparasite/netology-diplom-nginx-docker.git если там происходят изменения, то пересобирает образ и пушит изменения values, для helm чарта в другой git https://github.com/biparasite/netology-diplom-k8s-config.git . Далее в дело вступает argocd (FluxCD - не осилил пока), который мониторит на изменения во втором git и делает sync. Сделано для удобства, если кластер помрет, то с помощью argocd можно развернуть все быстро, без ожидания пушей в основной репозирорий.
+Я немного изменил подход, pipeline смотрит в git https://github.com/biparasite/netology-diplom-nginx-docker.git если там происходят изменения, то пересобирает образ и пушит изменения values, для helm чарта в другой git https://github.com/biparasite/netology-diplom-k8s-config.git . Далее в дело вступает ArgoCD, который мониторит изменения во втором git и делает sync. Сделано для удобства, если кластер помрет, то с помощью ArgoCD можно развернуть все быстро, без ожидания пушей в основной репозирорий.
 
 <details> <summary>jenkins pipeline</summary>
 

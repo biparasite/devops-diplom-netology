@@ -1,0 +1,9 @@
+- name: Init nodes
+  become: false
+  block:
+    - name: Copy the join command to server location
+      copy: src=~/Documents/Netology/Git/devops-diplom-netology/terraform-backend/ansible/join-command dest=/tmp/join-command.sh mode=0777
+
+    - name: Join the node to cluster # запускаем наш файл
+      command: sh /tmp/join-command.sh
+      become: true

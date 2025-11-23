@@ -1,0 +1,105 @@
+- name: Install CRI-O on Debian 12
+  become: true
+  block:
+    - name: Install apps
+      ansible.builtin.apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gpg
+          - pip
+          - git
+        update_cache: true
+      become: true
+
+    - name: Download and install CRI‑O GPG key
+      ansible.builtin.apt_key:
+        url: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.33/deb/Release.key
+        keyring: /etc/apt/trusted.gpg.d/cri-o-apt-keyring.gpg
+      register: gpg_key_result
+
+    - name: Add CRI‑O APT repository
+      ansible.builtin.apt_repository:
+        repo: deb [signed-by=/etc/apt/trusted.gpg.d/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.33/deb/ /
+        state: present
+        filename: cri-o
+      register: repo_result
+      changed_when: repo_result is changed
+
+    - name: Update APT cache after adding repository
+      ansible.builtin.apt:
+        update_cache: true
+      when: repo_result is changed
+
+    - name: Install CRI-O
+      ansible.builtin.apt:
+        name:
+          - cri-o
+        state: present
+      become: true
+
+    - name: Enable and start CRI-O service
+      ansible.builtin.systemd:
+        name: crio
+        state: started
+        enabled: true
+
+    - name: Download Helm installation script
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+        dest: /tmp/get_helm.sh
+        mode: "0755"
+
+    - name: Run Helm installation script
+      ansible.builtin.command: /tmp/get_helm.sh
+      args:
+        creates: /usr/local/bin/helm # Prevents re-running if Helm is already installed
+      register: helm_install_result
+      changed_when: false # Mark as not changed, as the script itself performs the change
+
+    - name: Add /usr/local/bin to PATH (if not already present)
+      ansible.builtin.lineinfile:
+        path: ~/.bashrc
+        line: "export PATH=$PATH:/usr/local/bin"
+        create: true
+        state: present
+      when: helm_install_result.rc == 0 # Only add to PATH if installation was successful
+
+    - name: Mkdir keyrings # Добаление директории
+      ansible.builtin.file:
+        path: "/etc/apt/keyrings"
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Add gpg key
+      apt_key:
+        url: "https://pkgs.k8s.io/core:/stable:/v1.34/deb/Release.key"
+        state: present
+        keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      become: true
+
+    - name: Add repo
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.34/deb/ /"
+      become: true
+
+    - name: Install Kubernetes packages. # Установка K8s
+      package:
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
+        state: present
+      become: true
+
+    - name: Hold kubeadm # отключим обновления
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubeadm
+        - kubelet
+        - kubectl
+      become: true

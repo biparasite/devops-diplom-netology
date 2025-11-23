@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MIT-0
+---
+# handlers file for kerneltunning
+
+- name: Reload kernel modules
+  ansible.builtin.command:
+    cmd: /sbin/modprobe -a overlay br_netfilter
+  listen: reload_modules
+
+#- name: Apply sysctl settings
+#  ansible.builtin.sysctl:
+#    sysctl_file: /etc/sysctl.conf
+#    reload: true
+#  listen: apply_sysctl
+
+- name: Apply sysctl
+  ansible.builtin.command:
+    cmd: /sbin/sysctl --system
+  listen: apply_sysctl

@@ -1,0 +1,25 @@
+- name: Prepaire OS
+  hosts: all
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  roles:
+    - kerneltunning
+    - linux_apps
+- name: Init master nodes
+  hosts: Control_node
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  roles:
+    - kubernetes
+- name: Init worker nodes
+  hosts: Worker_node
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  roles:
+    - workernode
+- name: Helm install apps
+  hosts: Control_node
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  roles:
+    - helminstall

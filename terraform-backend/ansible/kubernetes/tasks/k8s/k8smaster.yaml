@@ -1,0 +1,36 @@
+- name: Initialize Kubernetes control plane
+  become: false
+  block:
+    - name: Initialize the Kubernetes cluster using kubeadm # инициализируем кластер
+      shell: "kubeadm init --pod-network-cidr 10.244.0.0/16 --apiserver-cert-extra-sans={{ ansible_host}} --skip-phases=addon/kube-proxy"
+      args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+      become: true
+
+    - name: Mkdir HOME/.kube/
+      ansible.builtin.file:
+        path: "/home/biparasite/.kube/"
+        state: directory
+        mode: "0755"
+      become: false
+
+    - name: Get permission # даем доступ для обычного пользователя
+      shell: "cp -f /etc/kubernetes/admin.conf /home/biparasite/.kube/config"
+      become: true
+
+    - name: Get permission # даем доступ для обычного пользователя
+      become: true
+      ansible.builtin.file:
+        path: /home/biparasite/.kube/config
+        mode: "0644"
+        owner: biparasite
+        group: biparasite
+        state: file
+
+    - name: Generate join commandq
+      command: kubeadm token create --print-join-command
+      register: join_command
+
+    - name: Copy join command to local file
+      local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="/Users/biparasite/Documents/Netology/Git/devops-diplom-netology/terraform-backend/ansible/join-command"
